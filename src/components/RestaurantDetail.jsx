@@ -1,23 +1,14 @@
-// src/components/RestaurantDetail.jsx
-
 import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useCartContext } from '../contexts/CartContext';
+import { Box, Card, CardContent, Typography, TextField, Button, Grid, Snackbar, Alert } from '@mui/material';
 
-const RestaurantDetail = ({ menu }) => {
+const RestaurantDetail = () => {
   const { addToCart } = useCartContext();
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [quantity, setQuantity] = useState(1);
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-  const handleAddToCart = (item) => {
-    const newItem = {
-      ...item,
-      quantity,
-    };
-    addToCart(newItem);
-    alert(`${item.name} added to cart`);
-    setQuantity(1);  // Reset quantity after adding
-  };
-const restaurantsList = [
+  const restaurantsList = [
     {
       id: 1,
       name: "The Pizza Place",
@@ -91,23 +82,142 @@ const restaurantsList = [
       ],
     },
   ];
+  const restaurant = restaurantsList.find(r => r.id === parseInt(id));
+
+  const [quantities, setQuantities] = useState({});
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+
+  const handleQuantityChange = (itemId, value) => {
+    setQuantities((prev) => ({
+      ...prev,
+      [itemId]: value > 0 ? value : 1,
+    }));
+  };
+
+  const handleAddToCart = (item) => {
+    const quantity = quantities[item.id] || 1;
+    const newItem = { ...item, quantity };
+    addToCart(newItem);
+
+    setSnackbarMessage(`${item.name} added to cart`);
+    setSnackbarOpen(true);
+
+    setQuantities((prev) => ({
+      ...prev,
+      [item.id]: 1,
+    }));
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
+
+  const goToCart = () => {
+    navigate('/cart');
+  };
+
+  const goToRestaurantList = () => {
+    navigate('/restaurant-list');
+  };
+
+  if (!restaurant) {
+    return <Typography variant="h4" align="center">Restaurant not found</Typography>;
+  }
 
   return (
-    <div>
-      <h1>Menu</h1>
-      {menu.map((item) => (
-        <div key={item.id} className="menu-item">
-          <h3>{item.name} - ₹{item.price}</h3>
-          <input
-            type="number"
-            min="1"
-            value={quantity}
-            onChange={(e) => setQuantity(parseInt(e.target.value))}
-          />
-          <button onClick={() => handleAddToCart(item)}>Add to Cart</button>
-        </div>
-      ))}
-    </div>
+    <Box sx={{ p: 4 }}>
+      <Typography variant="h3" gutterBottom align="center">
+        {restaurant.name} Menu
+      </Typography>
+
+      <Grid container spacing={3} justifyContent="center">
+        {restaurant.menu.map((item) => (
+          <Grid item xs={12} sm={6} md={4} key={item.id}>
+            <Card sx={{ maxWidth: 345, boxShadow: 3 }}>
+              <CardContent>
+                <Typography variant="h6">
+                  {item.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Price: ₹{item.price}
+                </Typography>
+
+                <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <TextField
+                    type="number"
+                    label="Quantity"
+                    variant="outlined"
+                    size="small"
+                    sx={{ width: '100px' }}
+                    value={quantities[item.id] || 1}
+                    onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value))}
+                    inputProps={{ min: 1 }}
+                  />
+                  <Button
+                    variant="contained"
+                    sx={{
+                      backgroundColor: '#6a1b9a',
+                      color: '#fff',
+                      '&:hover': {
+                        backgroundColor: '#9c4dcc',
+                      },
+                    }}
+                    onClick={() => handleAddToCart(item)}
+                  >
+                    Add to Cart
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center', gap: 2 }}>
+        <Button
+          variant="contained"
+          sx={{
+            backgroundColor: '#9c4dcc',
+            '&:hover': { backgroundColor: '#6a1b9a' }
+          }}
+          onClick={goToCart}
+        >
+          Go to Cart
+        </Button>
+        <Button
+  variant="outlined"
+  sx={{
+    color: '#9c4dcc',
+    borderColor: '#9c4dcc',
+    '&:hover': {
+      borderColor: '#7a1ea6',  // Darker shade on hover
+      backgroundColor: 'rgba(156, 77, 204, 0.1)',  // Light purple background on hover
+    }
+  }}
+  onClick={goToRestaurantList}
+>
+  Back to Restaurants
+</Button>
+
+      </Box>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity="success"
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 };
 
